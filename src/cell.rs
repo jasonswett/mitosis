@@ -37,13 +37,13 @@ mod tests {
         use super::*;
 
         #[test]
-        fn it_returns_the_bounding_box_of_the_cell() {
-            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0 };
-            assert_eq!(cell.bounding_box(100, 100), (40, 40, 60, 60));
+        fn it_spans_from_center_minus_radius_to_center_plus_radius() {
+            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
+            assert_eq!(cell.bounding_box(100, 100), (40, 20, 60, 40));
         }
 
         #[test]
-        fn it_clamps_to_the_screen_edges() {
+        fn when_the_cell_is_near_the_top_left_edge_it_clamps_to_zero() {
             let cell = Cell { x: 5.0, y: 5.0, radius: 10.0 };
             let (x_min, y_min, _, _) = cell.bounding_box(100, 100);
             assert_eq!(x_min, 0);
@@ -51,7 +51,7 @@ mod tests {
         }
 
         #[test]
-        fn it_clamps_to_the_bottom_right_edge() {
+        fn when_the_cell_is_near_the_bottom_right_edge_it_clamps_to_the_buffer_boundary() {
             let cell = Cell { x: 95.0, y: 95.0, radius: 10.0 };
             let (_, _, x_max, y_max) = cell.bounding_box(100, 100);
             assert_eq!(x_max, 99);
@@ -63,35 +63,29 @@ mod tests {
         use super::*;
 
         #[test]
-        fn it_colors_the_center_pixel_blue() {
-            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0 };
+        fn when_a_point_is_inside_the_circle_it_is_blue() {
+            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
             let mut buffer = vec![0u32; 100 * 100];
             cell.draw(&mut buffer, 100, 100);
-            assert_eq!(buffer[50 * 100 + 50], 0x00_40_FF);
+            // (55, 33): distance_squared = 5*5 + 3*3 = 34 <= 100
+            assert_eq!(buffer[33 * 100 + 55], 0x00_40_FF);
         }
 
         #[test]
-        fn it_does_not_color_a_pixel_outside_the_circle() {
-            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0 };
+        fn when_a_point_is_outside_the_circle_but_inside_the_bounding_box_it_is_black() {
+            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
+            let mut buffer = vec![0u32; 100 * 100];
+            cell.draw(&mut buffer, 100, 100);
+            // (58, 37): distance_squared = 8*8 + 7*7 = 113 > 100
+            assert_eq!(buffer[37 * 100 + 58], 0x00_00_00);
+        }
+
+        #[test]
+        fn when_a_point_is_outside_the_bounding_box_it_is_black() {
+            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
             let mut buffer = vec![0u32; 100 * 100];
             cell.draw(&mut buffer, 100, 100);
             assert_eq!(buffer[0], 0x00_00_00);
-        }
-
-        #[test]
-        fn it_colors_a_pixel_just_inside_the_edge() {
-            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0 };
-            let mut buffer = vec![0u32; 100 * 100];
-            cell.draw(&mut buffer, 100, 100);
-            assert_eq!(buffer[50 * 100 + 59], 0x00_40_FF);
-        }
-
-        #[test]
-        fn it_does_not_color_a_pixel_just_outside_the_edge() {
-            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0 };
-            let mut buffer = vec![0u32; 100 * 100];
-            cell.draw(&mut buffer, 100, 100);
-            assert_eq!(buffer[39 * 100 + 39], 0x00_00_00);
         }
     }
 }

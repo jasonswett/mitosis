@@ -57,7 +57,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn the_center_pixel_is_blue() {
+        fn the_cell_is_visible() {
             let world = World::new(800, 600);
             let mut buffer = vec![0u32; 800 * 600];
             world.render(&mut buffer);
@@ -65,7 +65,7 @@ mod tests {
         }
 
         #[test]
-        fn a_pixel_outside_the_circle_is_black() {
+        fn the_background_is_black() {
             let world = World::new(800, 600);
             let mut buffer = vec![0u32; 800 * 600];
             world.render(&mut buffer);
