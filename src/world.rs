@@ -26,25 +26,7 @@ impl World {
         }
 
         for cell in &self.cells {
-            let center_x = cell.x;
-            let center_y = cell.y;
-            let radius = cell.radius;
-            let radius_squared = radius * radius;
-
-            let y_min = ((center_y - radius).floor() as isize).max(0) as usize;
-            let y_max = ((center_y + radius).ceil() as isize).min(self.height as isize - 1) as usize;
-            let x_min = ((center_x - radius).floor() as isize).max(0) as usize;
-            let x_max = ((center_x + radius).ceil() as isize).min(self.width as isize - 1) as usize;
-
-            for y in y_min..=y_max {
-                for x in x_min..=x_max {
-                    let distance_x = x as f32 - center_x;
-                    let distance_y = y as f32 - center_y;
-                    if distance_x * distance_x + distance_y * distance_y <= radius_squared {
-                        buffer[y * self.width + x] = 0x00_40_FF;
-                    }
-                }
-            }
+            cell.draw(buffer, self.width, self.height);
         }
     }
 }
