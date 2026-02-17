@@ -4,6 +4,7 @@ pub struct World {
     pub width: usize,
     pub height: usize,
     pub cells: Vec<Cell>,
+    buffer: Vec<u32>,
 }
 
 impl World {
@@ -13,20 +14,29 @@ impl World {
             y: height as f32 / 2.0,
             radius: 30.0,
         };
-        World {
+        let mut world = World {
             width,
             height,
             cells: vec![cell],
-        }
+            buffer: vec![0u32; width * height],
+        };
+        world.composite();
+        world
     }
 
-    pub fn render(&self, buffer: &mut [u32]) {
-        for pixel in buffer.iter_mut() {
-            *pixel = 0x00_00_00;
-        }
+    pub fn buffer(&self) -> &[u32] {
+        &self.buffer
+    }
+
+    fn composite(&mut self) {
+        self.buffer.fill(0x00_00_00);
 
         for cell in &self.cells {
-            cell.draw(buffer, self.width, self.height);
+            for (x, y, color) in cell.pixels() {
+                if x < self.width && y < self.height {
+                    self.buffer[y * self.width + x] = color;
+                }
+            }
         }
     }
 }
@@ -59,17 +69,31 @@ mod tests {
         #[test]
         fn the_cell_is_visible() {
             let world = World::new(800, 600);
-            let mut buffer = vec![0u32; 800 * 600];
-            world.render(&mut buffer);
-            assert_eq!(buffer[300 * 800 + 400], 0x00_40_FF);
+            assert_eq!(world.buffer()[300 * 800 + 400], 0x00_40_FF);
         }
 
         #[test]
         fn the_background_is_black() {
             let world = World::new(800, 600);
-            let mut buffer = vec![0u32; 800 * 600];
-            world.render(&mut buffer);
-            assert_eq!(buffer[0], 0x00_00_00);
+            assert_eq!(world.buffer()[0], 0x00_00_00);
+        }
+    }
+
+    mod when_a_cell_extends_past_the_buffer_boundary {
+        use super::*;
+
+        #[test]
+        fn out_of_bounds_pixels_are_clipped() {
+            let mut world = World {
+                width: 50,
+                height: 50,
+                cells: vec![Cell { x: 49.0, y: 49.0, radius: 5.0 }],
+                buffer: vec![0u32; 50 * 50],
+            };
+            world.composite();
+
+            assert_eq!(world.buffer().len(), 50 * 50);
+            assert_eq!(world.buffer()[49 * 50 + 49], 0x00_40_FF);
         }
     }
 }
