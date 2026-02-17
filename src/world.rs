@@ -14,30 +14,30 @@ impl World {
             y: height as f32 / 2.0,
             radius: 30.0,
         };
-        let mut world = World {
+        World {
             width,
             height,
+            buffer: Self::rendered_buffer(&[cell], width, height),
             cells: vec![cell],
-            buffer: vec![0u32; width * height],
-        };
-        world.composite();
-        world
+        }
     }
 
     pub fn buffer(&self) -> &[u32] {
         &self.buffer
     }
 
-    fn composite(&mut self) {
-        self.buffer.fill(0x00_00_00);
+    fn rendered_buffer(cells: &[Cell], width: usize, height: usize) -> Vec<u32> {
+        let mut buffer = vec![0x00_00_00u32; width * height];
 
-        for cell in &self.cells {
+        for cell in cells {
             for (x, y, color) in cell.pixels() {
-                if x < self.width && y < self.height {
-                    self.buffer[y * self.width + x] = color;
+                if x < width && y < height {
+                    buffer[y * width + x] = color;
                 }
             }
         }
+
+        buffer
     }
 }
 
@@ -84,16 +84,11 @@ mod tests {
 
         #[test]
         fn out_of_bounds_pixels_are_clipped() {
-            let mut world = World {
-                width: 50,
-                height: 50,
-                cells: vec![Cell { x: 49.0, y: 49.0, radius: 5.0 }],
-                buffer: vec![0u32; 50 * 50],
-            };
-            world.composite();
+            let cells = vec![Cell { x: 49.0, y: 49.0, radius: 5.0 }];
+            let buffer = World::rendered_buffer(&cells, 50, 50);
 
-            assert_eq!(world.buffer().len(), 50 * 50);
-            assert_eq!(world.buffer()[49 * 50 + 49], 0x00_40_FF);
+            assert_eq!(buffer.len(), 50 * 50);
+            assert_eq!(buffer[49 * 50 + 49], 0x00_40_FF);
         }
     }
 }

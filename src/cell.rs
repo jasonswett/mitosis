@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub struct Cell {
     pub x: f32,
     pub y: f32,
