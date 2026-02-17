@@ -64,28 +64,28 @@ mod tests {
 
         #[test]
         fn when_a_point_is_inside_the_circle_it_is_blue() {
-            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
+            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0 };
             let mut buffer = vec![0u32; 100 * 100];
             cell.draw(&mut buffer, 100, 100);
-            // (55, 33): distance_squared = 5*5 + 3*3 = 34 <= 100
-            assert_eq!(buffer[33 * 100 + 55], 0x00_40_FF);
+            // (15, 33): distance_squared = 5*5 + 3*3 = 34 <= 100
+            assert_eq!(buffer[33 * 100 + 15], 0x00_40_FF);
         }
 
         #[test]
         fn when_a_point_is_outside_the_circle_but_inside_the_bounding_box_it_is_black() {
-            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
+            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0 };
             let mut buffer = vec![0u32; 100 * 100];
             cell.draw(&mut buffer, 100, 100);
-            // (58, 37): distance_squared = 8*8 + 7*7 = 113 > 100
-            assert_eq!(buffer[37 * 100 + 58], 0x00_00_00);
+            // (18, 37): distance_squared = 8*8 + 7*7 = 113 > 100
+            assert_eq!(buffer[37 * 100 + 18], 0x00_00_00);
         }
 
         #[test]
         fn when_a_point_is_outside_the_bounding_box_it_is_black() {
-            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
+            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0 };
             let mut buffer = vec![0u32; 100 * 100];
             cell.draw(&mut buffer, 100, 100);
-            assert_eq!(buffer[0], 0x00_00_00);
+            assert_eq!(buffer[99 * 100 + 99], 0x00_00_00);
         }
     }
 }
