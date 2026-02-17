@@ -20,16 +20,12 @@ unsafe extern "C" {
     fn CGDisplayBounds(display: u32) -> CGRect;
 }
 
-fn screen_size() -> (usize, usize) {
-    unsafe {
+fn main() {
+    let (width, height) = unsafe {
         let display = CGMainDisplayID();
         let bounds = CGDisplayBounds(display);
         (bounds.size.width as usize, bounds.size.height as usize)
-    }
-}
-
-fn main() {
-    let (width, height) = screen_size();
+    };
 
     let mut window = Window::new(
         "Mitosis",
