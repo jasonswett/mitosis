@@ -42,12 +42,10 @@ fn main() {
     window.limit_update_rate(Some(std::time::Duration::from_micros(16_667)));
 
     let world = World::new(width, height);
-    let mut buffer = vec![0u32; width * height];
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        world.render(&mut buffer);
         window
-            .update_with_buffer(&buffer, width, height)
+            .update_with_buffer(world.buffer(), width, height)
             .expect("Unable to update window");
     }
 }

@@ -4,6 +4,7 @@ pub struct World {
     pub width: usize,
     pub height: usize,
     pub cells: Vec<Cell>,
+    buffer: Vec<u32>,
 }
 
 impl World {
@@ -16,18 +17,27 @@ impl World {
         World {
             width,
             height,
+            buffer: Self::buffer_with_cells(&[cell], width, height),
             cells: vec![cell],
         }
     }
 
-    pub fn render(&self, buffer: &mut [u32]) {
-        for pixel in buffer.iter_mut() {
-            *pixel = 0x00_00_00;
+    pub fn buffer(&self) -> &[u32] {
+        &self.buffer
+    }
+
+    fn buffer_with_cells(cells: &[Cell], width: usize, height: usize) -> Vec<u32> {
+        let mut buffer = vec![0x00_00_00u32; width * height];
+
+        for cell in cells {
+            for (x, y, color) in cell.pixels() {
+                if x < width && y < height {
+                    buffer[y * width + x] = color;
+                }
+            }
         }
 
-        for cell in &self.cells {
-            cell.draw(buffer, self.width, self.height);
-        }
+        buffer
     }
 }
 
@@ -59,17 +69,26 @@ mod tests {
         #[test]
         fn the_cell_is_visible() {
             let world = World::new(800, 600);
-            let mut buffer = vec![0u32; 800 * 600];
-            world.render(&mut buffer);
-            assert_eq!(buffer[300 * 800 + 400], 0x00_40_FF);
+            assert_eq!(world.buffer()[300 * 800 + 400], 0x00_40_FF);
         }
 
         #[test]
         fn the_background_is_black() {
             let world = World::new(800, 600);
-            let mut buffer = vec![0u32; 800 * 600];
-            world.render(&mut buffer);
-            assert_eq!(buffer[0], 0x00_00_00);
+            assert_eq!(world.buffer()[0], 0x00_00_00);
+        }
+    }
+
+    mod when_a_cell_extends_past_the_buffer_boundary {
+        use super::*;
+
+        #[test]
+        fn out_of_bounds_pixels_are_clipped() {
+            let cells = vec![Cell { x: 49.0, y: 49.0, radius: 5.0 }];
+            let buffer = World::buffer_with_cells(&cells, 50, 50);
+
+            assert_eq!(buffer.len(), 50 * 50);
+            assert_eq!(buffer[49 * 50 + 49], 0x00_40_FF);
         }
     }
 }
