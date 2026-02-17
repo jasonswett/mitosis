@@ -17,7 +17,7 @@ impl World {
         World {
             width,
             height,
-            buffer: Self::rendered_buffer(&[cell], width, height),
+            buffer: Self::buffer_with_cells(&[cell], width, height),
             cells: vec![cell],
         }
     }
@@ -26,7 +26,7 @@ impl World {
         &self.buffer
     }
 
-    fn rendered_buffer(cells: &[Cell], width: usize, height: usize) -> Vec<u32> {
+    fn buffer_with_cells(cells: &[Cell], width: usize, height: usize) -> Vec<u32> {
         let mut buffer = vec![0x00_00_00u32; width * height];
 
         for cell in cells {
@@ -85,7 +85,7 @@ mod tests {
         #[test]
         fn out_of_bounds_pixels_are_clipped() {
             let cells = vec![Cell { x: 49.0, y: 49.0, radius: 5.0 }];
-            let buffer = World::rendered_buffer(&cells, 50, 50);
+            let buffer = World::buffer_with_cells(&cells, 50, 50);
 
             assert_eq!(buffer.len(), 50 * 50);
             assert_eq!(buffer[49 * 50 + 49], 0x00_40_FF);
