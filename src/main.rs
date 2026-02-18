@@ -4,6 +4,7 @@ use std::time::Instant;
 
 const FRAME_DURATION_MICROSECONDS: u64 = 16_667;
 const FPS_DISPLAY_SCALE: usize = 4;
+const INITIAL_ENERGY: u32 = 100;
 
 #[repr(C)]
 struct CGSize {
@@ -46,7 +47,7 @@ fn main() {
     window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROSECONDS)));
 
     let mut simulation = Simulation::new(vec![
-        Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0 },
+        Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY },
     ]);
     let mut frame_pixels = vec![0u32; width * height];
     let mut stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());

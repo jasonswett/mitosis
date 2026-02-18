@@ -35,14 +35,14 @@ mod tests {
 
         #[test]
         fn the_buffer_contains_visible_pixels() {
-            let cells = vec![Cell { x: 50.0, y: 50.0, radius: 10.0 }];
+            let cells = vec![Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 }];
             let world_buffer = WorldBuffer::new(&cells, 100, 100);
             assert!(world_buffer.pixels().iter().any(|&pixel| pixel != 0x00_00_00));
         }
 
         #[test]
         fn the_background_is_black() {
-            let cells = vec![Cell { x: 50.0, y: 50.0, radius: 10.0 }];
+            let cells = vec![Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 }];
             let world_buffer = WorldBuffer::new(&cells, 100, 100);
             assert_eq!(world_buffer.pixels()[0], 0x00_00_00);
         }
@@ -53,7 +53,7 @@ mod tests {
 
         #[test]
         fn out_of_bounds_pixels_are_clipped() {
-            let cells = vec![Cell { x: 49.0, y: 49.0, radius: 5.0 }];
+            let cells = vec![Cell { x: 49.0, y: 49.0, radius: 5.0, energy: 100 }];
             let world_buffer = WorldBuffer::new(&cells, 50, 50);
 
             assert_eq!(world_buffer.pixels().len(), 50 * 50);

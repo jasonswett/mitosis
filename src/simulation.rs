@@ -7,6 +7,7 @@ const DAUGHTER_RADIUS_FRACTION: f32 = 0.5;
 const DAUGHTER_OFFSET: f32 = 12.0;
 const DAUGHTER_Y_OFFSET_RANGE: f32 = 12.0;
 const MIN_FPS_FOR_SPLIT: usize = 40;
+const MIN_ENERGY_FOR_SPLIT: u32 = 2;
 
 pub struct Simulation {
     cells: Vec<Cell>,
@@ -32,7 +33,7 @@ impl Simulation {
         let mut rng = rand::thread_rng();
 
         for cell in &grown {
-            if cell.radius >= SPLIT_RADIUS {
+            if cell.radius >= SPLIT_RADIUS && cell.energy >= MIN_ENERGY_FOR_SPLIT {
                 let [a, b] = daughter_cells(cell, &mut rng);
                 next.push(a);
                 next.push(b);
@@ -51,6 +52,7 @@ fn grown_cell(cell: &Cell, growth_rate: f32) -> Cell {
         x: cell.x,
         y: cell.y,
         radius: cell.radius + growth_rate,
+        energy: cell.energy,
     }
 }
 
@@ -83,17 +85,20 @@ fn resolve_overlaps(cells: &mut Vec<Cell>) {
 
 fn daughter_cells(cell: &Cell, rng: &mut impl Rng) -> [Cell; 2] {
     let daughter_radius = cell.radius * DAUGHTER_RADIUS_FRACTION;
+    let daughter_energy = cell.energy / 2;
 
     [
         Cell {
             x: cell.x - DAUGHTER_OFFSET,
             y: cell.y + rng.gen_range(-DAUGHTER_Y_OFFSET_RANGE..=DAUGHTER_Y_OFFSET_RANGE),
             radius: daughter_radius,
+            energy: daughter_energy,
         },
         Cell {
             x: cell.x + DAUGHTER_OFFSET,
             y: cell.y + rng.gen_range(-DAUGHTER_Y_OFFSET_RANGE..=DAUGHTER_Y_OFFSET_RANGE),
             radius: daughter_radius,
+            energy: daughter_energy,
         },
     ]
 }
@@ -107,17 +112,24 @@ mod tests {
 
         #[test]
         fn it_increases_the_radius_by_the_growth_rate() {
-            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0 };
+            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 };
             let result = grown_cell(&cell, 0.5);
             assert_eq!(result.radius, 10.5);
         }
 
         #[test]
         fn it_preserves_position() {
-            let cell = Cell { x: 30.0, y: 70.0, radius: 10.0 };
+            let cell = Cell { x: 30.0, y: 70.0, radius: 10.0, energy: 100 };
             let result = grown_cell(&cell, 0.5);
             assert_eq!(result.x, 30.0);
             assert_eq!(result.y, 70.0);
+        }
+
+        #[test]
+        fn it_preserves_energy() {
+            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 42 };
+            let result = grown_cell(&cell, 0.5);
+            assert_eq!(result.energy, 42);
         }
     }
 
@@ -133,14 +145,14 @@ mod tests {
 
         #[test]
         fn it_returns_two_cells() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 60.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 60.0, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
             assert_eq!(daughters.len(), 2);
         }
 
         #[test]
         fn daughters_have_half_the_radius() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
             assert_eq!(daughters[0].radius, 10.0);
             assert_eq!(daughters[1].radius, 10.0);
@@ -148,7 +160,7 @@ mod tests {
 
         #[test]
         fn daughters_are_offset_horizontally() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
             assert_eq!(daughters[0].x, 88.0);
             assert_eq!(daughters[1].x, 112.0);
@@ -156,7 +168,7 @@ mod tests {
 
         #[test]
         fn daughters_are_not_touching() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
             let distance = (daughters[1].x - daughters[0].x).abs();
             let sum_of_radii = daughters[0].radius + daughters[1].radius;
@@ -165,14 +177,14 @@ mod tests {
 
         #[test]
         fn daughters_get_distinct_y_offsets() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
             assert_ne!(daughters[0].y, daughters[1].y);
         }
 
         #[test]
         fn daughter_y_values_match_rng_output() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
 
             let mut rng = seeded_rng();
@@ -180,6 +192,14 @@ mod tests {
             let expected_y_1 = cell.y + rng.gen_range(-DAUGHTER_Y_OFFSET_RANGE..=DAUGHTER_Y_OFFSET_RANGE);
             assert_eq!(daughters[0].y, expected_y_0);
             assert_eq!(daughters[1].y, expected_y_1);
+        }
+
+        #[test]
+        fn each_daughter_gets_half_the_parent_energy() {
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 80 };
+            let daughters = daughter_cells(&cell, &mut seeded_rng());
+            assert_eq!(daughters[0].energy, 40);
+            assert_eq!(daughters[1].energy, 40);
         }
     }
 
@@ -196,8 +216,8 @@ mod tests {
             // Distance=5, min_distance=20, overlap=15, half_push=7.5.
             // nx=1, ny=0. Cell 0: x=-7.5. Cell 1: x=12.5.
             let mut cells = vec![
-                Cell { x: 0.0, y: 0.0, radius: 10.0 },
-                Cell { x: 5.0, y: 0.0, radius: 10.0 },
+                Cell { x: 0.0, y: 0.0, radius: 10.0, energy: 100 },
+                Cell { x: 5.0, y: 0.0, radius: 10.0, energy: 100 },
             ];
             resolve_overlaps(&mut cells);
             assert!(approx_eq(cells[0].x, -7.5), "cell 0 x was {}", cells[0].x);
@@ -213,8 +233,8 @@ mod tests {
             // nx=3/5=0.6, ny=4/5=0.8.
             // Cell 0: (-1.5, -2.0). Cell 1: (4.5, 6.0).
             let mut cells = vec![
-                Cell { x: 0.0, y: 0.0, radius: 5.0 },
-                Cell { x: 3.0, y: 4.0, radius: 5.0 },
+                Cell { x: 0.0, y: 0.0, radius: 5.0, energy: 100 },
+                Cell { x: 3.0, y: 4.0, radius: 5.0, energy: 100 },
             ];
             resolve_overlaps(&mut cells);
             assert!(approx_eq(cells[0].x, -1.5), "cell 0 x was {}", cells[0].x);
@@ -226,8 +246,8 @@ mod tests {
         #[test]
         fn non_overlapping_cells_are_unchanged() {
             let mut cells = vec![
-                Cell { x: 0.0, y: 0.0, radius: 5.0 },
-                Cell { x: 20.0, y: 0.0, radius: 5.0 },
+                Cell { x: 0.0, y: 0.0, radius: 5.0, energy: 100 },
+                Cell { x: 20.0, y: 0.0, radius: 5.0, energy: 100 },
             ];
             resolve_overlaps(&mut cells);
             assert_eq!(cells[0].x, 0.0);
@@ -240,8 +260,8 @@ mod tests {
         fn exactly_touching_cells_are_unchanged() {
             // Distance = sum of radii, so distance < min_distance is false.
             let mut cells = vec![
-                Cell { x: 0.0, y: 0.0, radius: 10.0 },
-                Cell { x: 20.0, y: 0.0, radius: 10.0 },
+                Cell { x: 0.0, y: 0.0, radius: 10.0, energy: 100 },
+                Cell { x: 20.0, y: 0.0, radius: 10.0, energy: 100 },
             ];
             resolve_overlaps(&mut cells);
             assert_eq!(cells[0].x, 0.0);
@@ -253,8 +273,8 @@ mod tests {
             // Distance=0, min_distance=20, overlap=20, half_push=10.
             // Fallback nx=1, ny=0. Cell 0: x=40. Cell 1: x=60.
             let mut cells = vec![
-                Cell { x: 50.0, y: 50.0, radius: 10.0 },
-                Cell { x: 50.0, y: 50.0, radius: 10.0 },
+                Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
+                Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
             ];
             resolve_overlaps(&mut cells);
             assert!(approx_eq(cells[0].x, 40.0), "cell 0 x was {}", cells[0].x);
@@ -269,8 +289,8 @@ mod tests {
             // Distance=4, min_distance=14, overlap=10, half_push=5.
             // nx=1, ny=0. Cell 0: x=-5. Cell 1: x=9.
             let mut cells = vec![
-                Cell { x: 0.0, y: 0.0, radius: 6.0 },
-                Cell { x: 4.0, y: 0.0, radius: 8.0 },
+                Cell { x: 0.0, y: 0.0, radius: 6.0, energy: 100 },
+                Cell { x: 4.0, y: 0.0, radius: 8.0, energy: 100 },
             ];
             resolve_overlaps(&mut cells);
             assert!(approx_eq(cells[0].x, -5.0), "cell 0 x was {}", cells[0].x);
@@ -280,9 +300,9 @@ mod tests {
         #[test]
         fn three_cells_in_a_line_all_resolve() {
             let mut cells = vec![
-                Cell { x: 0.0, y: 0.0, radius: 10.0 },
-                Cell { x: 10.0, y: 0.0, radius: 10.0 },
-                Cell { x: 20.0, y: 0.0, radius: 10.0 },
+                Cell { x: 0.0, y: 0.0, radius: 10.0, energy: 100 },
+                Cell { x: 10.0, y: 0.0, radius: 10.0, energy: 100 },
+                Cell { x: 20.0, y: 0.0, radius: 10.0, energy: 100 },
             ];
             resolve_overlaps(&mut cells);
             for i in 0..cells.len() {
@@ -304,7 +324,7 @@ mod tests {
         #[test]
         fn it_grows_cells_below_the_split_threshold() {
             let mut simulation = Simulation::new(vec![
-                Cell { x: 50.0, y: 50.0, radius: 10.0 },
+                Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
             ]);
             simulation.tick(60);
             assert_eq!(simulation.cells().len(), 1);
@@ -314,7 +334,7 @@ mod tests {
         #[test]
         fn it_splits_a_cell_that_reaches_the_threshold() {
             let mut simulation = Simulation::new(vec![
-                Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE },
+                Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE, energy: 100 },
             ]);
             simulation.tick(60);
             assert_eq!(simulation.cells().len(), 2);
@@ -323,7 +343,7 @@ mod tests {
         #[test]
         fn daughters_have_reduced_radius_after_split() {
             let mut simulation = Simulation::new(vec![
-                Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE },
+                Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE, energy: 100 },
             ]);
             simulation.tick(60);
             let expected_radius = SPLIT_RADIUS * DAUGHTER_RADIUS_FRACTION;
@@ -334,7 +354,7 @@ mod tests {
         #[test]
         fn it_skips_the_tick_when_fps_is_below_threshold() {
             let mut simulation = Simulation::new(vec![
-                Cell { x: 50.0, y: 50.0, radius: 10.0 },
+                Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
             ]);
             simulation.tick(39);
             assert_eq!(simulation.cells()[0].radius, 10.0);
@@ -343,10 +363,20 @@ mod tests {
         #[test]
         fn it_ticks_when_fps_is_exactly_at_threshold() {
             let mut simulation = Simulation::new(vec![
-                Cell { x: 50.0, y: 50.0, radius: 10.0 },
+                Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
             ]);
             simulation.tick(40);
             assert_eq!(simulation.cells()[0].radius, 10.0 + GROWTH_RATE);
+        }
+
+        #[test]
+        fn a_cell_with_energy_1_grows_but_does_not_split() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE, energy: 1 },
+            ]);
+            simulation.tick(60);
+            assert_eq!(simulation.cells().len(), 1);
+            assert_eq!(simulation.cells()[0].radius, SPLIT_RADIUS);
         }
     }
 }

@@ -5,6 +5,7 @@ pub struct Cell {
     pub x: f32,
     pub y: f32,
     pub radius: f32,
+    pub energy: u32,
 }
 
 impl Cell {
@@ -44,13 +45,13 @@ mod tests {
 
         #[test]
         fn it_spans_from_center_minus_radius_to_center_plus_radius() {
-            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0 };
+            let cell = Cell { x: 50.0, y: 30.0, radius: 10.0, energy: 100 };
             assert_eq!(cell.bounding_box(), (40, 20, 60, 40));
         }
 
         #[test]
         fn when_the_cell_is_near_the_top_left_edge_it_clamps_to_zero() {
-            let cell = Cell { x: 5.0, y: 5.0, radius: 10.0 };
+            let cell = Cell { x: 5.0, y: 5.0, radius: 10.0, energy: 100 };
             let (x_min, y_min, _, _) = cell.bounding_box();
             assert_eq!(x_min, 0);
             assert_eq!(y_min, 0);
@@ -58,7 +59,7 @@ mod tests {
 
         #[test]
         fn when_the_cell_is_near_the_bottom_right_edge_it_is_unclamped() {
-            let cell = Cell { x: 95.0, y: 95.0, radius: 10.0 };
+            let cell = Cell { x: 95.0, y: 95.0, radius: 10.0, energy: 100 };
             let (_, _, x_max, y_max) = cell.bounding_box();
             assert_eq!(x_max, 105);
             assert_eq!(y_max, 105);
@@ -70,7 +71,7 @@ mod tests {
 
         #[test]
         fn a_point_inside_the_circle_is_included() {
-            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0 };
+            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0, energy: 100 };
             let pixels = cell.pixels();
             // (15, 33): distance_squared = 5*5 + 3*3 = 34 <= 100
             assert!(pixels.contains(&(15, 33, 0x00_40_FF)));
@@ -78,7 +79,7 @@ mod tests {
 
         #[test]
         fn a_point_outside_the_circle_is_not_included() {
-            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0 };
+            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0, energy: 100 };
             let pixels = cell.pixels();
             // (18, 37): distance_squared = 8*8 + 7*7 = 113 > 100
             assert!(!pixels.iter().any(|&(x, y, _)| x == 18 && y == 37));
