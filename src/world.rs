@@ -1,9 +1,9 @@
 use crate::Cell;
 
 pub struct World {
-    pub width: usize,
-    pub height: usize,
-    pub cells: Vec<Cell>,
+    width: usize,
+    height: usize,
+    cells: Vec<Cell>,
     buffer: Vec<u32>,
 }
 
