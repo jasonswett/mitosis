@@ -1,6 +1,5 @@
 const CELL_COLOR: u32 = 0x00_40_FF;
 
-#[derive(Clone, Copy)]
 pub struct Cell {
     pub x: f32,
     pub y: f32,
