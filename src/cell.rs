@@ -6,7 +6,7 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub fn bounding_box(&self) -> (usize, usize, usize, usize) {
+    fn bounding_box(&self) -> (usize, usize, usize, usize) {
         let x_min = ((self.x - self.radius).floor() as isize).max(0) as usize;
         let y_min = ((self.y - self.radius).floor() as isize).max(0) as usize;
         let x_max = (self.x + self.radius).ceil() as usize;
