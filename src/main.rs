@@ -52,7 +52,7 @@ fn main() {
     let mut stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        simulation.tick();
+        simulation.tick(stats_display.fps());
         stats_display.tick(Instant::now());
 
         let world_buffer = WorldBuffer::new(simulation.cells(), width, height);

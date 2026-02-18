@@ -6,6 +6,7 @@ const SPLIT_RADIUS: f32 = 20.0;
 const DAUGHTER_RADIUS_FRACTION: f32 = 0.5;
 const DAUGHTER_OFFSET: f32 = 12.0;
 const DAUGHTER_Y_OFFSET_RANGE: f32 = 12.0;
+const MIN_FPS_FOR_SPLIT: usize = 40;
 
 pub struct Simulation {
     cells: Vec<Cell>,
@@ -20,7 +21,11 @@ impl Simulation {
         &self.cells
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self, fps: usize) {
+        if fps < MIN_FPS_FOR_SPLIT {
+            return;
+        }
+
         let grown: Vec<Cell> = self.cells.iter().map(|cell| grown_cell(cell, GROWTH_RATE)).collect();
         let mut next = Vec::new();
 
@@ -301,7 +306,7 @@ mod tests {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 10.0 },
             ]);
-            simulation.tick();
+            simulation.tick(60);
             assert_eq!(simulation.cells().len(), 1);
             assert_eq!(simulation.cells()[0].radius, 10.0 + GROWTH_RATE);
         }
@@ -311,7 +316,7 @@ mod tests {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE },
             ]);
-            simulation.tick();
+            simulation.tick(60);
             assert_eq!(simulation.cells().len(), 2);
         }
 
@@ -320,10 +325,28 @@ mod tests {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE },
             ]);
-            simulation.tick();
+            simulation.tick(60);
             let expected_radius = SPLIT_RADIUS * DAUGHTER_RADIUS_FRACTION;
             assert_eq!(simulation.cells()[0].radius, expected_radius);
             assert_eq!(simulation.cells()[1].radius, expected_radius);
+        }
+
+        #[test]
+        fn it_skips_the_tick_when_fps_is_below_threshold() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 10.0 },
+            ]);
+            simulation.tick(39);
+            assert_eq!(simulation.cells()[0].radius, 10.0);
+        }
+
+        #[test]
+        fn it_ticks_when_fps_is_exactly_at_threshold() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 10.0 },
+            ]);
+            simulation.tick(40);
+            assert_eq!(simulation.cells()[0].radius, 10.0 + GROWTH_RATE);
         }
     }
 }

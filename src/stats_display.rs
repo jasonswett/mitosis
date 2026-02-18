@@ -31,6 +31,10 @@ impl StatsDisplay {
         }
     }
 
+    pub fn fps(&self) -> usize {
+        self.fps
+    }
+
     pub fn pixels(&self) -> Vec<(usize, usize, u32)> {
         TextDisplay::new(&format!("FPS: {}", self.fps), self.scale).pixels()
     }
@@ -56,6 +60,19 @@ mod tests {
             stats_display.tick(start + Duration::from_millis(200));
 
             assert_eq!(stats_display.pixels(), TextDisplay::new("FPS: 55", 1).pixels());
+        }
+
+        #[test]
+        fn fps_returns_the_calculated_value() {
+            let start = Instant::now();
+            let mut stats_display = StatsDisplay::new(1, start);
+
+            for _ in 0..10 {
+                stats_display.tick(start);
+            }
+            stats_display.tick(start + Duration::from_millis(200));
+
+            assert_eq!(stats_display.fps(), 55);
         }
     }
 
