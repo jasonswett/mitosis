@@ -4,7 +4,7 @@ use std::time::Instant;
 
 const FRAME_DURATION_MICROSECONDS: u64 = 16_667;
 const FPS_DISPLAY_SCALE: usize = 4;
-const INITIAL_ENERGY: u32 = 100;
+const INITIAL_ENERGY: u32 = 1000;
 
 #[repr(C)]
 struct CGSize {
