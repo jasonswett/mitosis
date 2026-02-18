@@ -1,5 +1,5 @@
 use minifb::{Key, Window, WindowOptions};
-use mitosis::{Cell, StatsDisplay, WorldBuffer};
+use mitosis::{Cell, Simulation, StatsDisplay, WorldBuffer};
 use std::time::Instant;
 
 const FRAME_DURATION_MICROSECONDS: u64 = 16_667;
@@ -45,14 +45,17 @@ fn main() {
 
     window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROSECONDS)));
 
-    let cell = Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 30.0 };
-    let world_buffer = WorldBuffer::new(&[cell], width, height);
-    let mut frame_pixels = world_buffer.pixels().to_vec();
+    let mut simulation = Simulation::new(vec![
+        Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 10.0 },
+    ]);
+    let mut frame_pixels = vec![0u32; width * height];
     let mut stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        simulation.tick();
         stats_display.tick(Instant::now());
 
+        let world_buffer = WorldBuffer::new(simulation.cells(), width, height);
         frame_pixels.copy_from_slice(world_buffer.pixels());
         for (x, y, color) in stats_display.pixels() {
             if x < width && y < height {
