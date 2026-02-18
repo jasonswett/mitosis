@@ -53,6 +53,13 @@ fn main() {
     let mut stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        if window.is_key_down(Key::Space) {
+            simulation = Simulation::new(vec![
+                Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY },
+            ]);
+            stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());
+        }
+
         simulation.tick(stats_display.fps());
         stats_display.tick(Instant::now());
 
