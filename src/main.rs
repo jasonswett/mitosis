@@ -48,7 +48,7 @@ fn main() {
 
     let cell = Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 30.0 };
     let world_buffer = WorldBuffer::new(&[cell], width, height);
-    let mut buffer = world_buffer.pixels().to_vec();
+    let mut frame_pixels = world_buffer.pixels().to_vec();
     let mut frame_count: usize = 0;
     let mut last_fps_update = Instant::now();
     let mut fps: usize = 0;
@@ -63,15 +63,15 @@ fn main() {
             last_fps_update = Instant::now();
         }
 
-        buffer.copy_from_slice(world_buffer.pixels());
+        frame_pixels.copy_from_slice(world_buffer.pixels());
         for (x, y, color) in display::fps_pixels(fps, FPS_DISPLAY_SCALE) {
             if x < width && y < height {
-                buffer[y * width + x] = color;
+                frame_pixels[y * width + x] = color;
             }
         }
 
         window
-            .update_with_buffer(&buffer, width, height)
+            .update_with_buffer(&frame_pixels, width, height)
             .expect("Unable to update window");
     }
 }
