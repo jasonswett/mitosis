@@ -1,5 +1,6 @@
 use minifb::{Key, Window, WindowOptions};
-use mitosis::World;
+use mitosis::{display, World};
+use std::time::Instant;
 
 #[repr(C)]
 struct CGSize {
@@ -42,10 +43,30 @@ fn main() {
     window.limit_update_rate(Some(std::time::Duration::from_micros(16_667)));
 
     let world = World::new(width, height);
+    let mut buffer = world.buffer().to_vec();
+    let mut frame_count: usize = 0;
+    let mut last_fps_update = Instant::now();
+    let mut fps: usize = 0;
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        frame_count += 1;
+
+        let elapsed = last_fps_update.elapsed();
+        if elapsed.as_millis() >= 200 {
+            fps = frame_count * 1000 / elapsed.as_millis() as usize;
+            frame_count = 0;
+            last_fps_update = Instant::now();
+        }
+
+        buffer.copy_from_slice(world.buffer());
+        for (x, y, color) in display::fps_pixels(fps, 4) {
+            if x < width && y < height {
+                buffer[y * width + x] = color;
+            }
+        }
+
         window
-            .update_with_buffer(world.buffer(), width, height)
+            .update_with_buffer(&buffer, width, height)
             .expect("Unable to update window");
     }
 }
