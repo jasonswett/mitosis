@@ -1,4 +1,4 @@
-use crate::display;
+use crate::TextDisplay;
 use std::time::Instant;
 
 const FPS_UPDATE_INTERVAL_MILLISECONDS: u128 = 200;
@@ -32,7 +32,7 @@ impl StatsDisplay {
     }
 
     pub fn pixels(&self) -> Vec<(usize, usize, u32)> {
-        display::fps_pixels(self.fps, self.scale)
+        TextDisplay::new(&format!("FPS: {}", self.fps), self.scale).pixels()
     }
 }
 
@@ -55,7 +55,7 @@ mod tests {
             }
             stats_display.tick(start + Duration::from_millis(200));
 
-            assert_eq!(stats_display.pixels(), display::fps_pixels(55, 1));
+            assert_eq!(stats_display.pixels(), TextDisplay::new("FPS: 55", 1).pixels());
         }
     }
 
@@ -69,7 +69,7 @@ mod tests {
 
             stats_display.tick(start + Duration::from_millis(100));
 
-            assert_eq!(stats_display.pixels(), display::fps_pixels(0, 1));
+            assert_eq!(stats_display.pixels(), TextDisplay::new("FPS: 0", 1).pixels());
         }
     }
 }
