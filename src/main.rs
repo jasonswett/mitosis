@@ -2,6 +2,10 @@ use minifb::{Key, Window, WindowOptions};
 use mitosis::{display, World};
 use std::time::Instant;
 
+const FRAME_DURATION_MICROS: u64 = 16_667;
+const FPS_UPDATE_INTERVAL_MILLIS: u128 = 200;
+const FPS_DISPLAY_SCALE: usize = 4;
+
 #[repr(C)]
 struct CGSize {
     width: f64,
@@ -40,7 +44,7 @@ fn main() {
     )
     .expect("Unable to create window");
 
-    window.limit_update_rate(Some(std::time::Duration::from_micros(16_667)));
+    window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROS)));
 
     let world = World::new(width, height);
     let mut buffer = world.buffer().to_vec();
@@ -52,14 +56,14 @@ fn main() {
         frame_count += 1;
 
         let elapsed = last_fps_update.elapsed();
-        if elapsed.as_millis() >= 200 {
+        if elapsed.as_millis() >= FPS_UPDATE_INTERVAL_MILLIS {
             fps = frame_count * 1000 / elapsed.as_millis() as usize;
             frame_count = 0;
             last_fps_update = Instant::now();
         }
 
         buffer.copy_from_slice(world.buffer());
-        for (x, y, color) in display::fps_pixels(fps, 4) {
+        for (x, y, color) in display::fps_pixels(fps, FPS_DISPLAY_SCALE) {
             if x < width && y < height {
                 buffer[y * width + x] = color;
             }

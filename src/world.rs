@@ -1,5 +1,8 @@
 use crate::Cell;
 
+const BACKGROUND_COLOR: u32 = 0x00_00_00;
+const CELL_RADIUS: f32 = 30.0;
+
 pub struct World {
     buffer: Vec<u32>,
 }
@@ -9,7 +12,7 @@ impl World {
         let cell = Cell {
             x: width as f32 / 2.0,
             y: height as f32 / 2.0,
-            radius: 30.0,
+            radius: CELL_RADIUS,
         };
         World {
             buffer: Self::buffer_with_cells(&[cell], width, height),
@@ -21,7 +24,7 @@ impl World {
     }
 
     fn buffer_with_cells(cells: &[Cell], width: usize, height: usize) -> Vec<u32> {
-        let mut buffer = vec![0x00_00_00u32; width * height];
+        let mut buffer = vec![BACKGROUND_COLOR; width * height];
 
         for cell in cells {
             for (x, y, color) in cell.pixels() {

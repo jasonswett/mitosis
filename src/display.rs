@@ -1,3 +1,4 @@
+const TEXT_COLOR: u32 = 0xFFFFFF;
 const GLYPH_WIDTH: usize = 3;
 const GLYPH_HEIGHT: usize = 5;
 
@@ -47,7 +48,7 @@ fn text_pixels(text: &str, scale: usize) -> Vec<(usize, usize, u32)> {
                     if bits & (1 << (GLYPH_WIDTH - 1 - col)) != 0 {
                         for sy in 0..scale {
                             for sx in 0..scale {
-                                pixels.push((cursor_x + col * scale + sx, row * scale + sy, 0xFFFFFF));
+                                pixels.push((cursor_x + col * scale + sx, row * scale + sy, TEXT_COLOR));
                             }
                         }
                     }

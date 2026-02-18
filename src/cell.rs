@@ -1,3 +1,5 @@
+const CELL_COLOR: u32 = 0x00_40_FF;
+
 #[derive(Clone, Copy)]
 pub struct Cell {
     pub x: f32,
@@ -24,7 +26,7 @@ impl Cell {
                 let distance_x = x as f32 - self.x;
                 let distance_y = y as f32 - self.y;
                 if distance_x * distance_x + distance_y * distance_y <= radius_squared {
-                    pixels.push((x, y, 0x00_40_FF));
+                    pixels.push((x, y, CELL_COLOR));
                 }
             }
         }
