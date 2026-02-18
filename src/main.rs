@@ -2,8 +2,8 @@ use minifb::{Key, Window, WindowOptions};
 use mitosis::{display, World};
 use std::time::Instant;
 
-const FRAME_DURATION_MICROS: u64 = 16_667;
-const FPS_UPDATE_INTERVAL_MILLIS: u128 = 200;
+const FRAME_DURATION_MICROSECONDS: u64 = 16_667;
+const FPS_UPDATE_INTERVAL_MILLISECONDS: u128 = 200;
 const FPS_DISPLAY_SCALE: usize = 4;
 
 #[repr(C)]
@@ -44,7 +44,7 @@ fn main() {
     )
     .expect("Unable to create window");
 
-    window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROS)));
+    window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROSECONDS)));
 
     let world = World::new(width, height);
     let mut buffer = world.buffer().to_vec();
@@ -56,7 +56,7 @@ fn main() {
         frame_count += 1;
 
         let elapsed = last_fps_update.elapsed();
-        if elapsed.as_millis() >= FPS_UPDATE_INTERVAL_MILLIS {
+        if elapsed.as_millis() >= FPS_UPDATE_INTERVAL_MILLISECONDS {
             fps = frame_count * 1000 / elapsed.as_millis() as usize;
             frame_count = 0;
             last_fps_update = Instant::now();
