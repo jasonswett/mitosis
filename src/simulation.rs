@@ -1,9 +1,9 @@
 use crate::Cell;
 
-const GROWTH_RATE: f32 = 0.05;
-const SPLIT_RADIUS: f32 = 60.0;
+const GROWTH_RATE: f32 = 0.25;
+const SPLIT_RADIUS: f32 = 20.0;
 const DAUGHTER_RADIUS_FRACTION: f32 = 0.5;
-const DAUGHTER_OFFSET: f32 = 15.0;
+const DAUGHTER_OFFSET: f32 = 12.0;
 
 pub struct Simulation {
     cells: Vec<Cell>,
@@ -96,23 +96,32 @@ mod tests {
 
         #[test]
         fn daughters_have_half_the_radius() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 60.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
             let daughters = daughter_cells(&cell);
-            assert_eq!(daughters[0].radius, 30.0);
-            assert_eq!(daughters[1].radius, 30.0);
+            assert_eq!(daughters[0].radius, 10.0);
+            assert_eq!(daughters[1].radius, 10.0);
         }
 
         #[test]
         fn daughters_are_offset_horizontally() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 60.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
             let daughters = daughter_cells(&cell);
-            assert_eq!(daughters[0].x, 85.0);
-            assert_eq!(daughters[1].x, 115.0);
+            assert_eq!(daughters[0].x, 88.0);
+            assert_eq!(daughters[1].x, 112.0);
+        }
+
+        #[test]
+        fn daughters_are_not_touching() {
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
+            let daughters = daughter_cells(&cell);
+            let distance = (daughters[1].x - daughters[0].x).abs();
+            let sum_of_radii = daughters[0].radius + daughters[1].radius;
+            assert!(distance > sum_of_radii);
         }
 
         #[test]
         fn daughters_share_the_parent_y() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 60.0 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
             let daughters = daughter_cells(&cell);
             assert_eq!(daughters[0].y, 100.0);
             assert_eq!(daughters[1].y, 100.0);

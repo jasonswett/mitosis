@@ -46,7 +46,7 @@ fn main() {
     window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROSECONDS)));
 
     let mut simulation = Simulation::new(vec![
-        Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 10.0 },
+        Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0 },
     ]);
     let mut frame_pixels = vec![0u32; width * height];
     let mut stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());
