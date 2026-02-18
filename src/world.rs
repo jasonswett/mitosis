@@ -1,9 +1,6 @@
 use crate::Cell;
 
 pub struct World {
-    width: usize,
-    height: usize,
-    cells: Vec<Cell>,
     buffer: Vec<u32>,
 }
 
@@ -15,10 +12,7 @@ impl World {
             radius: 30.0,
         };
         World {
-            width,
-            height,
             buffer: Self::buffer_with_cells(&[cell], width, height),
-            cells: vec![cell],
         }
     }
 
