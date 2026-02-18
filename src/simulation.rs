@@ -1,9 +1,11 @@
 use crate::Cell;
+use rand::Rng;
 
 const GROWTH_RATE: f32 = 0.25;
 const SPLIT_RADIUS: f32 = 20.0;
 const DAUGHTER_RADIUS_FRACTION: f32 = 0.5;
 const DAUGHTER_OFFSET: f32 = 12.0;
+const DAUGHTER_Y_OFFSET_RANGE: f32 = 12.0;
 
 pub struct Simulation {
     cells: Vec<Cell>,
@@ -22,9 +24,11 @@ impl Simulation {
         let grown: Vec<Cell> = self.cells.iter().map(|cell| grown_cell(cell, GROWTH_RATE)).collect();
         let mut next = Vec::new();
 
+        let mut rng = rand::thread_rng();
+
         for cell in &grown {
             if cell.radius >= SPLIT_RADIUS {
-                let [a, b] = daughter_cells(cell);
+                let [a, b] = daughter_cells(cell, &mut rng);
                 next.push(a);
                 next.push(b);
             } else {
@@ -72,18 +76,18 @@ fn resolve_overlaps(cells: &mut Vec<Cell>) {
     }
 }
 
-fn daughter_cells(cell: &Cell) -> [Cell; 2] {
+fn daughter_cells(cell: &Cell, rng: &mut impl Rng) -> [Cell; 2] {
     let daughter_radius = cell.radius * DAUGHTER_RADIUS_FRACTION;
 
     [
         Cell {
             x: cell.x - DAUGHTER_OFFSET,
-            y: cell.y,
+            y: cell.y + rng.gen_range(-DAUGHTER_Y_OFFSET_RANGE..=DAUGHTER_Y_OFFSET_RANGE),
             radius: daughter_radius,
         },
         Cell {
             x: cell.x + DAUGHTER_OFFSET,
-            y: cell.y,
+            y: cell.y + rng.gen_range(-DAUGHTER_Y_OFFSET_RANGE..=DAUGHTER_Y_OFFSET_RANGE),
             radius: daughter_radius,
         },
     ]
@@ -114,18 +118,25 @@ mod tests {
 
     mod daughter_cells {
         use super::*;
+        use rand::Rng;
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+
+        fn seeded_rng() -> StdRng {
+            StdRng::seed_from_u64(42)
+        }
 
         #[test]
         fn it_returns_two_cells() {
             let cell = Cell { x: 100.0, y: 100.0, radius: 60.0 };
-            let daughters = daughter_cells(&cell);
+            let daughters = daughter_cells(&cell, &mut seeded_rng());
             assert_eq!(daughters.len(), 2);
         }
 
         #[test]
         fn daughters_have_half_the_radius() {
             let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
-            let daughters = daughter_cells(&cell);
+            let daughters = daughter_cells(&cell, &mut seeded_rng());
             assert_eq!(daughters[0].radius, 10.0);
             assert_eq!(daughters[1].radius, 10.0);
         }
@@ -133,7 +144,7 @@ mod tests {
         #[test]
         fn daughters_are_offset_horizontally() {
             let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
-            let daughters = daughter_cells(&cell);
+            let daughters = daughter_cells(&cell, &mut seeded_rng());
             assert_eq!(daughters[0].x, 88.0);
             assert_eq!(daughters[1].x, 112.0);
         }
@@ -141,18 +152,29 @@ mod tests {
         #[test]
         fn daughters_are_not_touching() {
             let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
-            let daughters = daughter_cells(&cell);
+            let daughters = daughter_cells(&cell, &mut seeded_rng());
             let distance = (daughters[1].x - daughters[0].x).abs();
             let sum_of_radii = daughters[0].radius + daughters[1].radius;
             assert!(distance > sum_of_radii);
         }
 
         #[test]
-        fn daughters_share_the_parent_y() {
+        fn daughters_get_distinct_y_offsets() {
             let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
-            let daughters = daughter_cells(&cell);
-            assert_eq!(daughters[0].y, 100.0);
-            assert_eq!(daughters[1].y, 100.0);
+            let daughters = daughter_cells(&cell, &mut seeded_rng());
+            assert_ne!(daughters[0].y, daughters[1].y);
+        }
+
+        #[test]
+        fn daughter_y_values_match_rng_output() {
+            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0 };
+            let daughters = daughter_cells(&cell, &mut seeded_rng());
+
+            let mut rng = seeded_rng();
+            let expected_y_0 = cell.y + rng.gen_range(-DAUGHTER_Y_OFFSET_RANGE..=DAUGHTER_Y_OFFSET_RANGE);
+            let expected_y_1 = cell.y + rng.gen_range(-DAUGHTER_Y_OFFSET_RANGE..=DAUGHTER_Y_OFFSET_RANGE);
+            assert_eq!(daughters[0].y, expected_y_0);
+            assert_eq!(daughters[1].y, expected_y_1);
         }
     }
 
