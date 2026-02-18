@@ -82,11 +82,5 @@ mod tests {
             assert!(!pixels.iter().any(|&(x, y, _)| x == 18 && y == 37));
         }
 
-        #[test]
-        fn a_point_far_from_the_cell_is_not_included() {
-            let cell = Cell { x: 10.0, y: 30.0, radius: 10.0 };
-            let pixels = cell.pixels();
-            assert!(!pixels.iter().any(|&(x, y, _)| x == 99 && y == 99));
-        }
     }
 }

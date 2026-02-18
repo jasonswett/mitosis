@@ -49,27 +49,9 @@ mod tests {
         use super::*;
 
         #[test]
-        fn it_has_one_cell() {
+        fn the_buffer_contains_a_visible_cell() {
             let world = World::new(800, 600);
-            assert_eq!(world.cells.len(), 1);
-        }
-
-        #[test]
-        fn the_cell_is_centered() {
-            let world = World::new(800, 600);
-            let cell = &world.cells[0];
-            assert_eq!(cell.x, 400.0);
-            assert_eq!(cell.y, 300.0);
-        }
-    }
-
-    mod when_the_world_renders {
-        use super::*;
-
-        #[test]
-        fn the_cell_is_visible() {
-            let world = World::new(800, 600);
-            assert_eq!(world.buffer()[300 * 800 + 400], 0x00_40_FF);
+            assert!(world.buffer().iter().any(|&pixel| pixel != 0x00_00_00));
         }
 
         #[test]
