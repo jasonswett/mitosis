@@ -2,10 +2,10 @@ use crate::Cell;
 use rand::Rng;
 
 const GROWTH_RATE: f32 = 0.25;
-const SPLIT_RADIUS: f32 = 20.0;
+const SPLIT_RADIUS: f32 = 10.0;
 const DAUGHTER_RADIUS_FRACTION: f32 = 0.5;
-const DAUGHTER_OFFSET: f32 = 12.0;
-const DAUGHTER_Y_OFFSET_RANGE: f32 = 12.0;
+const DAUGHTER_OFFSET: f32 = 6.0;
+const DAUGHTER_Y_OFFSET_RANGE: f32 = 6.0;
 const MIN_FPS_FOR_SPLIT: usize = 40;
 const MIN_ENERGY_FOR_SPLIT: u32 = 2;
 
@@ -112,9 +112,9 @@ mod tests {
 
         #[test]
         fn it_increases_the_radius_by_the_growth_rate() {
-            let cell = Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 };
+            let cell = Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 };
             let result = grown_cell(&cell, 0.5);
-            assert_eq!(result.radius, 10.5);
+            assert_eq!(result.radius, 5.5);
         }
 
         #[test]
@@ -169,13 +169,13 @@ mod tests {
         fn daughters_are_offset_horizontally() {
             let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
-            assert_eq!(daughters[0].x, 88.0);
-            assert_eq!(daughters[1].x, 112.0);
+            assert_eq!(daughters[0].x, 94.0);
+            assert_eq!(daughters[1].x, 106.0);
         }
 
         #[test]
         fn daughters_are_not_touching() {
-            let cell = Cell { x: 100.0, y: 100.0, radius: 20.0, energy: 100 };
+            let cell = Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS, energy: 100 };
             let daughters = daughter_cells(&cell, &mut seeded_rng());
             let distance = (daughters[1].x - daughters[0].x).abs();
             let sum_of_radii = daughters[0].radius + daughters[1].radius;
@@ -331,11 +331,11 @@ mod tests {
         #[test]
         fn it_grows_cells_below_the_split_threshold() {
             let mut simulation = Simulation::new(vec![
-                Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
             ]);
             simulation.tick(60);
             assert_eq!(simulation.cells().len(), 1);
-            assert_eq!(simulation.cells()[0].radius, 10.0 + GROWTH_RATE);
+            assert_eq!(simulation.cells()[0].radius, 5.0 + GROWTH_RATE);
         }
 
         #[test]
@@ -370,10 +370,10 @@ mod tests {
         #[test]
         fn it_ticks_when_fps_is_exactly_at_threshold() {
             let mut simulation = Simulation::new(vec![
-                Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
             ]);
             simulation.tick(40);
-            assert_eq!(simulation.cells()[0].radius, 10.0 + GROWTH_RATE);
+            assert_eq!(simulation.cells()[0].radius, 5.0 + GROWTH_RATE);
         }
 
         #[test]
