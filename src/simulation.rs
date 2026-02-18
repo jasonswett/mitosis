@@ -33,6 +33,7 @@ impl Simulation {
         }
 
         self.cells = next;
+        resolve_overlaps(&mut self.cells);
     }
 }
 
