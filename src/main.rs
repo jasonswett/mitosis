@@ -1,5 +1,5 @@
 use minifb::{Key, Window, WindowOptions};
-use mitosis::{display, World};
+use mitosis::{display, Cell, WorldBuffer};
 use std::time::Instant;
 
 const FRAME_DURATION_MICROSECONDS: u64 = 16_667;
@@ -46,8 +46,9 @@ fn main() {
 
     window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROSECONDS)));
 
-    let world = World::new(width, height);
-    let mut buffer = world.buffer().to_vec();
+    let cell = Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 30.0 };
+    let world_buffer = WorldBuffer::new(&[cell], width, height);
+    let mut buffer = world_buffer.pixels().to_vec();
     let mut frame_count: usize = 0;
     let mut last_fps_update = Instant::now();
     let mut fps: usize = 0;
@@ -62,7 +63,7 @@ fn main() {
             last_fps_update = Instant::now();
         }
 
-        buffer.copy_from_slice(world.buffer());
+        buffer.copy_from_slice(world_buffer.pixels());
         for (x, y, color) in display::fps_pixels(fps, FPS_DISPLAY_SCALE) {
             if x < width && y < height {
                 buffer[y * width + x] = color;

@@ -3,4 +3,4 @@ pub mod display;
 mod world;
 
 pub use cell::Cell;
-pub use world::World;
+pub use world::WorldBuffer;
