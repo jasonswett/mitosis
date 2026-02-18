@@ -51,7 +51,7 @@ fn grown_cell(cell: &Cell, growth_rate: f32) -> Cell {
     Cell {
         x: cell.x,
         y: cell.y,
-        radius: cell.radius + growth_rate,
+        radius: (cell.radius + growth_rate).min(SPLIT_RADIUS),
         energy: cell.energy,
     }
 }
@@ -130,6 +130,13 @@ mod tests {
             let cell = Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 42 };
             let result = grown_cell(&cell, 0.5);
             assert_eq!(result.energy, 42);
+        }
+
+        #[test]
+        fn it_caps_radius_at_split_radius() {
+            let cell = Cell { x: 50.0, y: 50.0, radius: SPLIT_RADIUS - 0.1, energy: 100 };
+            let result = grown_cell(&cell, 1.0);
+            assert_eq!(result.radius, SPLIT_RADIUS);
         }
     }
 
