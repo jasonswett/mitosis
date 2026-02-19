@@ -47,7 +47,7 @@ fn main() {
     window.limit_update_rate(Some(std::time::Duration::from_micros(FRAME_DURATION_MICROSECONDS)));
 
     let mut simulation = Simulation::new(vec![
-        Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY },
+        Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY, vx: 0.0, vy: 0.0 },
     ], INITIAL_ENERGY, width, height);
     let mut frame_pixels = vec![0u32; width * height];
     let mut stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, INITIAL_ENERGY, Instant::now());
@@ -55,7 +55,7 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         if window.is_key_down(Key::Space) {
             simulation = Simulation::new(vec![
-                Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY },
+                Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY, vx: 0.0, vy: 0.0 },
             ], INITIAL_ENERGY, width, height);
             stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, INITIAL_ENERGY, Instant::now());
         }
