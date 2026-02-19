@@ -10,19 +10,24 @@ const DAUGHTER_Y_OFFSET_RANGE: f32 = 6.0;
 const MIN_FPS_FOR_SPLIT: usize = 40;
 const MIN_ENERGY_FOR_SPLIT: u32 = 2;
 const ENERGY_BALL_VALUE: u32 = 500;
+const ENERGY_BALL_SPAWN_INTERVAL_TICKS: usize = 600;
 
 pub struct Simulation {
     cells: Vec<Cell>,
     energy_balls: Vec<EnergyBall>,
+    starting_energy: u64,
+    ticks_since_last_spawn: usize,
     width: f32,
     height: f32,
 }
 
 impl Simulation {
-    pub fn new(cells: Vec<Cell>, width: usize, height: usize) -> Self {
+    pub fn new(cells: Vec<Cell>, starting_energy: u32, width: usize, height: usize) -> Self {
         Simulation {
             cells,
             energy_balls: Vec::new(),
+            starting_energy: starting_energy as u64,
+            ticks_since_last_spawn: 0,
             width: width as f32,
             height: height as f32,
         }
@@ -65,17 +70,28 @@ impl Simulation {
 
         self.absorb_energy_balls();
 
-        let x = rng.gen_range(0.0..self.width);
-        let y = rng.gen_range(0.0..self.height);
-        self.energy_balls.push(EnergyBall { x, y });
+        self.ticks_since_last_spawn += 1;
+        if self.ticks_since_last_spawn >= ENERGY_BALL_SPAWN_INTERVAL_TICKS
+            && self.total_energy() + ENERGY_BALL_VALUE as u64 <= self.starting_energy * 2
+        {
+            let x = rng.gen_range(0.0..self.width);
+            let y = rng.gen_range(0.0..self.height);
+            self.energy_balls.push(EnergyBall { x, y });
+            self.ticks_since_last_spawn = 0;
+        }
     }
 
     fn absorb_energy_balls(&mut self) {
         let mut absorbed = vec![false; self.energy_balls.len()];
+        let energy_cap = self.starting_energy * 2;
+        let mut current_energy: u64 = self.cells.iter().map(|cell| cell.energy as u64).sum();
 
         for cell in &mut self.cells {
             for (i, ball) in self.energy_balls.iter().enumerate() {
                 if absorbed[i] {
+                    continue;
+                }
+                if current_energy + ENERGY_BALL_VALUE as u64 > energy_cap {
                     continue;
                 }
                 let dx = cell.x - ball.x;
@@ -83,6 +99,7 @@ impl Simulation {
                 let distance = (dx * dx + dy * dy).sqrt();
                 if distance < cell.radius + ENERGY_BALL_RADIUS {
                     cell.energy += ENERGY_BALL_VALUE;
+                    current_energy += ENERGY_BALL_VALUE as u64;
                     absorbed[i] = true;
                 }
             }
@@ -383,13 +400,13 @@ mod tests {
             let simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
                 Cell { x: 100.0, y: 100.0, radius: 5.0, energy: 250 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             assert_eq!(simulation.total_energy(), 350);
         }
 
         #[test]
         fn it_returns_zero_for_no_cells() {
-            let simulation = Simulation::new(vec![], 200, 200);
+            let simulation = Simulation::new(vec![], 10000, 200, 200);
             assert_eq!(simulation.total_energy(), 0);
         }
     }
@@ -401,7 +418,7 @@ mod tests {
         fn it_grows_cells_below_the_split_threshold() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.tick(60);
             assert_eq!(simulation.cells().len(), 1);
             assert_eq!(simulation.cells()[0].radius, 5.0 + GROWTH_RATE);
@@ -411,7 +428,7 @@ mod tests {
         fn it_splits_a_cell_that_reaches_the_threshold() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.tick(60);
             assert_eq!(simulation.cells().len(), 2);
         }
@@ -420,7 +437,7 @@ mod tests {
         fn daughters_have_reduced_radius_after_split() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.tick(60);
             let expected_radius = SPLIT_RADIUS * DAUGHTER_RADIUS_FRACTION;
             assert_eq!(simulation.cells()[0].radius, expected_radius);
@@ -431,7 +448,7 @@ mod tests {
         fn it_skips_the_tick_when_fps_is_below_threshold() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.tick(39);
             assert_eq!(simulation.cells()[0].radius, 10.0);
         }
@@ -440,7 +457,7 @@ mod tests {
         fn it_ticks_when_fps_is_exactly_at_threshold() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.tick(40);
             assert_eq!(simulation.cells()[0].radius, 5.0 + GROWTH_RATE);
         }
@@ -449,46 +466,52 @@ mod tests {
         fn a_cell_with_energy_1_grows_but_does_not_split() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 100.0, y: 100.0, radius: SPLIT_RADIUS - GROWTH_RATE, energy: 1 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.tick(60);
             assert_eq!(simulation.cells().len(), 1);
             assert_eq!(simulation.cells()[0].radius, SPLIT_RADIUS);
         }
 
         #[test]
-        fn a_new_energy_ball_is_spawned_each_tick() {
+        fn an_energy_ball_is_spawned_after_the_interval() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             assert_eq!(simulation.energy_balls().len(), 0);
+            simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
             simulation.tick(60);
             assert_eq!(simulation.energy_balls().len(), 1);
+        }
+
+        #[test]
+        fn no_energy_ball_is_spawned_before_the_interval() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
+            ], 10000, 200, 200);
             simulation.tick(60);
-            assert_eq!(simulation.energy_balls().len(), 2);
+            assert_eq!(simulation.energy_balls().len(), 0);
         }
 
         #[test]
         fn an_energy_ball_overlapping_a_cell_is_absorbed() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });
             let energy_before = simulation.cells()[0].energy;
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, energy_before + ENERGY_BALL_VALUE);
-            // The pre-placed ball was absorbed; only the newly spawned one remains
-            assert_eq!(simulation.energy_balls().len(), 1);
+            assert_eq!(simulation.energy_balls().len(), 0);
         }
 
         #[test]
         fn an_energy_ball_not_touching_any_cell_persists() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 150.0, y: 150.0 });
             simulation.tick(60);
-            // The far-away ball persists, plus a new one was spawned
-            assert_eq!(simulation.energy_balls().len(), 2);
+            assert_eq!(simulation.energy_balls().len(), 1);
         }
 
         #[test]
@@ -497,7 +520,7 @@ mod tests {
             // Ball at (57, 50): distance = 7.0 < 8.25. Absorbed.
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 57.0, y: 50.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 600);
@@ -509,7 +532,7 @@ mod tests {
             // Ball at (55, 105): distance = sqrt(25+25) ≈ 7.07 < 8.25. Absorbed.
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 100.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 55.0, y: 105.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 600);
@@ -521,7 +544,7 @@ mod tests {
             // Ball at (58.25, 50): distance = 8.25, not < 8.25. Not absorbed.
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 58.25, y: 50.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 100);
@@ -533,7 +556,7 @@ mod tests {
             // Ball at (50, 40): distance = 10 > 8.25. Not absorbed.
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 50.0, y: 40.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 100);
@@ -543,23 +566,104 @@ mod tests {
         fn only_the_overlapping_ball_is_removed_when_multiple_exist() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 150.0, y: 150.0 }); // far away
             simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });   // overlapping
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 600);
-            // 1 original far-away ball persists + 1 new spawned
-            assert_eq!(simulation.energy_balls().len(), 2);
+            assert_eq!(simulation.energy_balls().len(), 1);
         }
 
         #[test]
         fn absorption_adds_exactly_500_energy() {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 37 },
-            ], 200, 200);
+            ], 10000, 200, 200);
             simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 537);
+        }
+
+        #[test]
+        fn no_ball_spawns_when_total_energy_plus_ball_value_exceeds_twice_starting_energy() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 2000 },
+            ], 1000, 200, 200);
+            simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
+            simulation.tick(60);
+            assert_eq!(simulation.energy_balls().len(), 0);
+        }
+
+        #[test]
+        fn a_ball_spawns_when_total_energy_plus_ball_value_equals_twice_starting_energy() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 1500 },
+            ], 1000, 200, 200);
+            simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
+            simulation.tick(60);
+            assert_eq!(simulation.energy_balls().len(), 1);
+        }
+
+        #[test]
+        fn absorption_is_skipped_when_it_would_exceed_the_energy_cap() {
+            // Cell has 1800 energy, cap is 2000. Absorbing a 500-energy ball would exceed cap.
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 1800 },
+            ], 1000, 200, 200);
+            simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });
+            simulation.tick(60);
+            assert_eq!(simulation.cells()[0].energy, 1800);
+            // Ball was not absorbed, so it persists. No new ball spawns either (also over cap).
+            assert_eq!(simulation.energy_balls().len(), 1);
+        }
+
+        #[test]
+        fn absorption_succeeds_when_energy_is_below_the_cap() {
+            // Cell energy=600, starting_energy=1000, cap=2000. 600+500=1100 <= 2000.
+            // Catches * → + (cap=1002, 1100>1002) and * → / (cap=500, 1100>500).
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 600 },
+            ], 1000, 200, 200);
+            simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });
+            simulation.tick(60);
+            assert_eq!(simulation.cells()[0].energy, 1100);
+        }
+
+        #[test]
+        fn absorption_succeeds_when_energy_exactly_reaches_the_cap() {
+            // Cell energy=1500, starting_energy=1000, cap=2000. 1500+500=2000, NOT > 2000.
+            // Catches > → >= (2000 >= 2000 would skip).
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 1500 },
+            ], 1000, 200, 200);
+            simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });
+            simulation.tick(60);
+            assert_eq!(simulation.cells()[0].energy, 2000);
+        }
+
+        #[test]
+        fn two_overlapping_balls_are_both_absorbed_when_under_the_cap() {
+            // Catches += → *= on current_energy tracking.
+            // With +=: current goes 100→600→1100, both under cap 20000.
+            // With *=: current goes 100→50000, second ball blocked.
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
+            ], 10000, 200, 200);
+            simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });
+            simulation.energy_balls.push(EnergyBall { x: 50.0, y: 50.0 });
+            simulation.tick(60);
+            assert_eq!(simulation.cells()[0].energy, 1100);
+            assert_eq!(simulation.energy_balls().len(), 0);
+        }
+
+        #[test]
+        fn a_ball_spawns_when_total_energy_is_below_twice_starting_energy() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
+            ], 1000, 200, 200);
+            simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
+            simulation.tick(60);
+            assert_eq!(simulation.energy_balls().len(), 1);
         }
     }
 }
