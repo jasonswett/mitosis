@@ -55,7 +55,7 @@ impl Simulation {
         }
 
         let grown: Vec<Cell> = self.cells.iter().map(|cell| grown_cell(cell, GROWTH_RATE)).collect();
-        let mut next = Vec::new();
+        let mut next = Vec::with_capacity(self.cells.len() * 2);
 
         let mut rng = rand::thread_rng();
 
@@ -111,8 +111,9 @@ impl Simulation {
                 }
                 let dx = cell.x - ball.x;
                 let dy = cell.y - ball.y;
-                let distance = (dx * dx + dy * dy).sqrt();
-                if distance < cell.radius + ENERGY_BALL_RADIUS {
+                let distance_squared = dx * dx + dy * dy;
+                let threshold = cell.radius + ENERGY_BALL_RADIUS;
+                if distance_squared < threshold * threshold {
                     cell.energy += ENERGY_BALL_VALUE;
                     current_energy += ENERGY_BALL_VALUE as u64;
                     absorbed[i] = true;
@@ -146,8 +147,13 @@ fn resolve_overlaps(cells: &mut Vec<Cell>) {
             for j in 0..i {
                 let dx = cells[i].x - cells[j].x;
                 let dy = cells[i].y - cells[j].y;
-                let distance = (dx * dx + dy * dy).sqrt();
-                let overlap = (cells[i].radius + cells[j].radius - distance).max(0.0);
+                let distance_squared = dx * dx + dy * dy;
+                let min_distance = cells[i].radius + cells[j].radius;
+                if distance_squared >= min_distance * min_distance {
+                    continue;
+                }
+                let distance = distance_squared.sqrt();
+                let overlap = min_distance - distance;
                 let half_push = overlap / 2.0;
 
                 let (nx, ny) = if distance == 0.0 {
