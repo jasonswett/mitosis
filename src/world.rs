@@ -1,4 +1,5 @@
 use crate::Cell;
+use crate::energy_ball::EnergyBall;
 
 const BACKGROUND_COLOR: u32 = 0x00_00_00;
 
@@ -7,8 +8,16 @@ pub struct WorldBuffer {
 }
 
 impl WorldBuffer {
-    pub fn new(cells: &[Cell], width: usize, height: usize) -> Self {
+    pub fn new(cells: &[Cell], energy_balls: &[EnergyBall], width: usize, height: usize) -> Self {
         let mut pixels = vec![BACKGROUND_COLOR; width * height];
+
+        for ball in energy_balls {
+            for (x, y, color) in ball.pixels() {
+                if x < width && y < height {
+                    pixels[y * width + x] = color;
+                }
+            }
+        }
 
         for cell in cells {
             for (x, y, color) in cell.pixels() {
@@ -36,14 +45,14 @@ mod tests {
         #[test]
         fn the_buffer_contains_visible_pixels() {
             let cells = vec![Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 }];
-            let world_buffer = WorldBuffer::new(&cells, 100, 100);
+            let world_buffer = WorldBuffer::new(&cells, &[], 100, 100);
             assert!(world_buffer.pixels().iter().any(|&pixel| pixel != 0x00_00_00));
         }
 
         #[test]
         fn the_background_is_black() {
             let cells = vec![Cell { x: 50.0, y: 50.0, radius: 10.0, energy: 100 }];
-            let world_buffer = WorldBuffer::new(&cells, 100, 100);
+            let world_buffer = WorldBuffer::new(&cells, &[], 100, 100);
             assert_eq!(world_buffer.pixels()[0], 0x00_00_00);
         }
     }
@@ -54,7 +63,7 @@ mod tests {
         #[test]
         fn out_of_bounds_pixels_are_clipped() {
             let cells = vec![Cell { x: 49.0, y: 49.0, radius: 5.0, energy: 100 }];
-            let world_buffer = WorldBuffer::new(&cells, 50, 50);
+            let world_buffer = WorldBuffer::new(&cells, &[], 50, 50);
 
             assert_eq!(world_buffer.pixels().len(), 50 * 50);
             assert_eq!(world_buffer.pixels()[49 * 50 + 49], 0x00_40_FF);

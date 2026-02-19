@@ -48,7 +48,7 @@ fn main() {
 
     let mut simulation = Simulation::new(vec![
         Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY },
-    ]);
+    ], width, height);
     let mut frame_pixels = vec![0u32; width * height];
     let mut stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());
 
@@ -56,14 +56,14 @@ fn main() {
         if window.is_key_down(Key::Space) {
             simulation = Simulation::new(vec![
                 Cell { x: width as f32 / 2.0, y: height as f32 / 2.0, radius: 5.0, energy: INITIAL_ENERGY },
-            ]);
+            ], width, height);
             stats_display = StatsDisplay::new(FPS_DISPLAY_SCALE, Instant::now());
         }
 
         simulation.tick(stats_display.fps());
         stats_display.tick(Instant::now());
 
-        let world_buffer = WorldBuffer::new(simulation.cells(), width, height);
+        let world_buffer = WorldBuffer::new(simulation.cells(), simulation.energy_balls(), width, height);
         frame_pixels.copy_from_slice(world_buffer.pixels());
         for (x, y, color) in stats_display.pixels() {
             if x < width && y < height {
