@@ -17,9 +17,12 @@ const DIGIT_GLYPHS: [[u8; GLYPH_HEIGHT]; 10] = [
 
 fn letter_glyph(ch: char) -> Option<[u8; GLYPH_HEIGHT]> {
     match ch {
+        'E' => Some([0b111, 0b100, 0b111, 0b100, 0b111]),
         'F' => Some([0b111, 0b100, 0b111, 0b100, 0b100]),
+        'O' => Some([0b111, 0b101, 0b101, 0b101, 0b111]),
         'P' => Some([0b111, 0b101, 0b111, 0b100, 0b100]),
         'S' => Some([0b111, 0b100, 0b111, 0b001, 0b111]),
+        '/' => Some([0b001, 0b001, 0b010, 0b100, 0b100]),
         ':' => Some([0b000, 0b010, 0b000, 0b010, 0b000]),
         _ => None,
     }

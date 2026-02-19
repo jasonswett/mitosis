@@ -36,6 +36,10 @@ impl Simulation {
         &self.energy_balls
     }
 
+    pub fn total_energy(&self) -> u64 {
+        self.cells.iter().map(|cell| cell.energy as u64).sum()
+    }
+
     pub fn tick(&mut self, fps: usize) {
         if fps < MIN_FPS_FOR_SPLIT {
             return;
@@ -368,6 +372,25 @@ mod tests {
                     );
                 }
             }
+        }
+    }
+
+    mod total_energy {
+        use super::*;
+
+        #[test]
+        fn it_sums_energy_across_all_cells() {
+            let simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
+                Cell { x: 100.0, y: 100.0, radius: 5.0, energy: 250 },
+            ], 200, 200);
+            assert_eq!(simulation.total_energy(), 350);
+        }
+
+        #[test]
+        fn it_returns_zero_for_no_cells() {
+            let simulation = Simulation::new(vec![], 200, 200);
+            assert_eq!(simulation.total_energy(), 0);
         }
     }
 
