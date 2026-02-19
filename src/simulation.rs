@@ -11,7 +11,7 @@ const MIN_FPS_FOR_SPLIT: usize = 40;
 const MIN_ENERGY_FOR_SPLIT: u32 = 2;
 const ENERGY_BALL_VALUE: u32 = 500;
 const ENERGY_BALL_SPAWN_INTERVAL_TICKS: usize = 600;
-const ENERGY_BALL_FALL_SPEED: f32 = 2.0;
+const ENERGY_BALL_FALL_SPEED: f32 = 4.0;
 const REAPER_INTERVAL_TICKS: usize = 30;
 
 pub struct Simulation {
@@ -544,11 +544,11 @@ mod tests {
         #[test]
         fn a_ball_at_nonzero_diagonal_distance_within_range_is_absorbed() {
             // Cell at (50, 100) grows to radius 5.25. Threshold = 8.25.
-            // Ball at (55, 103) falls to (55, 105): distance = sqrt(25+25) ≈ 7.07 < 8.25. Absorbed.
+            // Ball at (55, 101) falls to (55, 105): distance = sqrt(25+25) ≈ 7.07 < 8.25. Absorbed.
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 100.0, radius: 5.0, energy: 100 },
             ], 10000, 200, 200);
-            simulation.energy_balls.push(EnergyBall { x: 55.0, y: 103.0 });
+            simulation.energy_balls.push(EnergyBall { x: 55.0, y: 101.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 600);
         }
@@ -556,11 +556,11 @@ mod tests {
         #[test]
         fn a_ball_at_exactly_the_collision_boundary_is_not_absorbed() {
             // Cell at (50, 50) grows to radius 5.25. Threshold = 5.25 + 3.0 = 8.25.
-            // Ball at (58.25, 48) falls to (58.25, 50): distance = 8.25, not < 8.25. Not absorbed.
+            // Ball at (58.25, 46) falls to (58.25, 50): distance = 8.25, not < 8.25. Not absorbed.
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
             ], 10000, 200, 200);
-            simulation.energy_balls.push(EnergyBall { x: 58.25, y: 48.0 });
+            simulation.energy_balls.push(EnergyBall { x: 58.25, y: 46.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 100);
         }
@@ -568,11 +568,11 @@ mod tests {
         #[test]
         fn a_ball_beyond_range_vertically_is_not_absorbed() {
             // Cell at (50, 50) grows to radius 5.25. Threshold = 8.25.
-            // Ball at (50, 38) falls to (50, 40): distance = 10 > 8.25. Not absorbed.
+            // Ball at (50, 36) falls to (50, 40): distance = 10 > 8.25. Not absorbed.
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
             ], 10000, 200, 200);
-            simulation.energy_balls.push(EnergyBall { x: 50.0, y: 38.0 });
+            simulation.energy_balls.push(EnergyBall { x: 50.0, y: 36.0 });
             simulation.tick(60);
             assert_eq!(simulation.cells()[0].energy, 100);
         }
@@ -706,8 +706,8 @@ mod tests {
             let mut simulation = Simulation::new(vec![
                 Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
             ], 10000, 200, 200);
-            // Ball at y=198 falls to y=200, which is == height. Should be removed.
-            simulation.energy_balls.push(EnergyBall { x: 150.0, y: 198.0 });
+            // Ball at y=196 falls to y=200, which is == height. Should be removed.
+            simulation.energy_balls.push(EnergyBall { x: 150.0, y: 196.0 });
             simulation.tick(60);
             assert_eq!(simulation.energy_balls().len(), 0);
         }
@@ -720,6 +720,20 @@ mod tests {
             simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
             simulation.tick(60);
             assert_eq!(simulation.energy_balls()[0].y, 0.0);
+        }
+
+        #[test]
+        fn a_ball_to_the_left_just_outside_range_is_not_absorbed() {
+            // Cell at (100, 50) grows to radius 5.25. Threshold = 5.25 + 3.0 = 8.25.
+            // Ball at (91, 46) falls to (91, 50). dx = 100 - 91 = 9, dy = 0.
+            // Real distance = sqrt(81) = 9 >= 8.25. Not absorbed.
+            // Catches dx*dx → dx+dx: sqrt(9+9) = sqrt(18) ≈ 4.24 < 8.25, wrongly absorbed.
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 100.0, y: 50.0, radius: 5.0, energy: 100 },
+            ], 10000, 200, 200);
+            simulation.energy_balls.push(EnergyBall { x: 91.0, y: 46.0 });
+            simulation.tick(60);
+            assert_eq!(simulation.cells()[0].energy, 100);
         }
 
         #[test]
