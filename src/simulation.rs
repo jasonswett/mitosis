@@ -11,12 +11,14 @@ const MIN_FPS_FOR_SPLIT: usize = 40;
 const MIN_ENERGY_FOR_SPLIT: u32 = 2;
 const ENERGY_BALL_VALUE: u32 = 500;
 const ENERGY_BALL_SPAWN_INTERVAL_TICKS: usize = 600;
+const REAPER_INTERVAL_TICKS: usize = 60;
 
 pub struct Simulation {
     cells: Vec<Cell>,
     energy_balls: Vec<EnergyBall>,
     starting_energy: u64,
     ticks_since_last_spawn: usize,
+    ticks_since_last_reap: usize,
     width: f32,
     height: f32,
 }
@@ -28,6 +30,7 @@ impl Simulation {
             energy_balls: Vec::new(),
             starting_energy: starting_energy as u64,
             ticks_since_last_spawn: 0,
+            ticks_since_last_reap: 0,
             width: width as f32,
             height: height as f32,
         }
@@ -78,6 +81,13 @@ impl Simulation {
             let y = rng.gen_range(0.0..self.height);
             self.energy_balls.push(EnergyBall { x, y });
             self.ticks_since_last_spawn = 0;
+        }
+
+        self.ticks_since_last_reap += 1;
+        if self.ticks_since_last_reap >= REAPER_INTERVAL_TICKS && self.cells.len() > 1 {
+            let index = rng.gen_range(0..self.cells.len());
+            self.cells.remove(index);
+            self.ticks_since_last_reap = 0;
         }
     }
 
@@ -664,6 +674,38 @@ mod tests {
             simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
             simulation.tick(60);
             assert_eq!(simulation.energy_balls().len(), 1);
+        }
+
+        #[test]
+        fn the_reaper_removes_a_cell_after_the_interval() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
+                Cell { x: 100.0, y: 100.0, radius: 5.0, energy: 100 },
+                Cell { x: 150.0, y: 150.0, radius: 5.0, energy: 100 },
+            ], 10000, 200, 200);
+            simulation.ticks_since_last_reap = REAPER_INTERVAL_TICKS - 1;
+            simulation.tick(60);
+            assert_eq!(simulation.cells().len(), 2);
+        }
+
+        #[test]
+        fn the_reaper_does_not_remove_a_cell_before_the_interval() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
+                Cell { x: 100.0, y: 100.0, radius: 5.0, energy: 100 },
+            ], 10000, 200, 200);
+            simulation.tick(60);
+            assert_eq!(simulation.cells().len(), 2);
+        }
+
+        #[test]
+        fn the_reaper_does_not_remove_the_last_cell() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100 },
+            ], 10000, 200, 200);
+            simulation.ticks_since_last_reap = REAPER_INTERVAL_TICKS - 1;
+            simulation.tick(60);
+            assert_eq!(simulation.cells().len(), 1);
         }
     }
 }
