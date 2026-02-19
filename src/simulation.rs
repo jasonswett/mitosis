@@ -11,7 +11,7 @@ const MIN_FPS_FOR_SPLIT: usize = 40;
 const MIN_ENERGY_FOR_SPLIT: u32 = 2;
 const ENERGY_BALL_VALUE: u32 = 500;
 const ENERGY_BALL_SPAWN_INTERVAL_TICKS: usize = 600;
-const REAPER_INTERVAL_TICKS: usize = 60;
+const REAPER_INTERVAL_TICKS: usize = 10;
 
 pub struct Simulation {
     cells: Vec<Cell>,
