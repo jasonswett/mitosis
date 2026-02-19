@@ -90,8 +90,7 @@ impl Simulation {
         if self.ticks_since_last_spawn >= ENERGY_BALL_SPAWN_INTERVAL_TICKS
             && self.total_energy() + ENERGY_BALL_VALUE as u64 <= self.starting_energy * 2
         {
-            let x = rng.gen_range(0.0..self.width);
-            self.energy_balls.push(EnergyBall { x, y: 0.0 });
+            self.energy_balls.push(EnergyBall { x: self.width / 2.0, y: 0.0 });
             self.ticks_since_last_spawn = 0;
         }
 
@@ -754,6 +753,16 @@ mod tests {
             simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
             simulation.tick(60);
             assert_eq!(simulation.energy_balls()[0].y, 0.0);
+        }
+
+        #[test]
+        fn spawned_energy_balls_start_at_the_horizontal_center() {
+            let mut simulation = Simulation::new(vec![
+                Cell { x: 50.0, y: 50.0, radius: 5.0, energy: 100, vx: 0.0, vy: 0.0 },
+            ], 10000, 200, 200);
+            simulation.ticks_since_last_spawn = ENERGY_BALL_SPAWN_INTERVAL_TICKS - 1;
+            simulation.tick(60);
+            assert_eq!(simulation.energy_balls()[0].x, 100.0);
         }
 
         #[test]
