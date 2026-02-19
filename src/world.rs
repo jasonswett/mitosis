@@ -10,24 +10,20 @@ pub struct WorldBuffer {
 impl WorldBuffer {
     pub fn new(cells: &[Cell], energy_balls: &[EnergyBall], width: usize, height: usize) -> Self {
         let mut pixels = vec![BACKGROUND_COLOR; width * height];
+        Self::draw_into(cells, energy_balls, &mut pixels, width, height);
+        WorldBuffer { pixels }
+    }
+
+    pub fn draw_into(cells: &[Cell], energy_balls: &[EnergyBall], buffer: &mut [u32], width: usize, height: usize) {
+        buffer.fill(BACKGROUND_COLOR);
 
         for ball in energy_balls {
-            for (x, y, color) in ball.pixels() {
-                if x < width && y < height {
-                    pixels[y * width + x] = color;
-                }
-            }
+            ball.draw(buffer, width, height);
         }
 
         for cell in cells {
-            for (x, y, color) in cell.pixels() {
-                if x < width && y < height {
-                    pixels[y * width + x] = color;
-                }
-            }
+            cell.draw(buffer, width, height);
         }
-
-        WorldBuffer { pixels }
     }
 
     pub fn pixels(&self) -> &[u32] {
@@ -67,6 +63,20 @@ mod tests {
 
             assert_eq!(world_buffer.pixels().len(), 50 * 50);
             assert_eq!(world_buffer.pixels()[49 * 50 + 49], 0x00_40_FF);
+        }
+    }
+
+    mod when_an_energy_ball_extends_past_the_buffer_boundary {
+        use super::*;
+        use crate::energy_ball::EnergyBall;
+
+        #[test]
+        fn out_of_bounds_pixels_are_clipped() {
+            let balls = vec![EnergyBall { x: 49.0, y: 49.0 }];
+            let world_buffer = WorldBuffer::new(&[], &balls, 50, 50);
+
+            assert_eq!(world_buffer.pixels().len(), 50 * 50);
+            assert_eq!(world_buffer.pixels()[49 * 50 + 49], 0x00_FF_00);
         }
     }
 }

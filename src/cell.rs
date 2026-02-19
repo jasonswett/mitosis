@@ -17,21 +17,37 @@ impl Cell {
         (x_min, y_min, x_max, y_max)
     }
 
-    pub fn pixels(&self) -> Vec<(usize, usize, u32)> {
+    pub fn draw(&self, buffer: &mut [u32], width: usize, height: usize) {
         let (x_min, y_min, x_max, y_max) = self.bounding_box();
         let radius_squared = self.radius * self.radius;
-        let mut pixels = Vec::new();
 
-        for y in y_min..=y_max {
-            for x in x_min..=x_max {
+        for y in y_min..=y_max.min(height - 1) {
+            for x in x_min..=x_max.min(width - 1) {
                 let distance_x = x as f32 - self.x;
                 let distance_y = y as f32 - self.y;
                 if distance_x * distance_x + distance_y * distance_y <= radius_squared {
-                    pixels.push((x, y, CELL_COLOR));
+                    buffer[y * width + x] = CELL_COLOR;
                 }
             }
         }
+    }
 
+    pub fn pixels(&self) -> Vec<(usize, usize, u32)> {
+        let (_, _, x_max, y_max) = self.bounding_box();
+        let width = x_max + 1;
+        let height = y_max + 1;
+        let mut buffer = vec![0u32; width * height];
+        self.draw(&mut buffer, width, height);
+
+        let (x_min, y_min, _, _) = self.bounding_box();
+        let mut pixels = Vec::new();
+        for y in y_min..=y_max {
+            for x in x_min..=x_max {
+                if buffer[y * width + x] != 0 {
+                    pixels.push((x, y, buffer[y * width + x]));
+                }
+            }
+        }
         pixels
     }
 }
@@ -85,5 +101,11 @@ mod tests {
             assert!(!pixels.iter().any(|&(x, y, _)| x == 18 && y == 37));
         }
 
+        #[test]
+        fn a_cell_near_the_origin_produces_correct_pixels() {
+            let cell = Cell { x: 5.0, y: 2.0, radius: 3.0, energy: 100 };
+            let pixels = cell.pixels();
+            assert!(pixels.contains(&(5, 2, 0x00_40_FF)));
+        }
     }
 }

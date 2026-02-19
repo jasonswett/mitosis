@@ -7,24 +7,42 @@ pub struct EnergyBall {
 }
 
 impl EnergyBall {
-    pub fn pixels(&self) -> Vec<(usize, usize, u32)> {
+    pub fn draw(&self, buffer: &mut [u32], width: usize, height: usize) {
         let x_min = ((self.x - ENERGY_BALL_RADIUS).floor() as isize).max(0) as usize;
         let y_min = ((self.y - ENERGY_BALL_RADIUS).floor() as isize).max(0) as usize;
         let x_max = (self.x + ENERGY_BALL_RADIUS).ceil() as usize;
         let y_max = (self.y + ENERGY_BALL_RADIUS).ceil() as usize;
         let radius_squared = ENERGY_BALL_RADIUS * ENERGY_BALL_RADIUS;
-        let mut pixels = Vec::new();
 
-        for y in y_min..=y_max {
-            for x in x_min..=x_max {
+        for y in y_min..=y_max.min(height - 1) {
+            for x in x_min..=x_max.min(width - 1) {
                 let distance_x = x as f32 - self.x;
                 let distance_y = y as f32 - self.y;
                 if distance_x * distance_x + distance_y * distance_y <= radius_squared {
-                    pixels.push((x, y, ENERGY_BALL_COLOR));
+                    buffer[y * width + x] = ENERGY_BALL_COLOR;
                 }
             }
         }
+    }
 
+    pub fn pixels(&self) -> Vec<(usize, usize, u32)> {
+        let x_min = ((self.x - ENERGY_BALL_RADIUS).floor() as isize).max(0) as usize;
+        let x_max = (self.x + ENERGY_BALL_RADIUS).ceil() as usize;
+        let y_min = ((self.y - ENERGY_BALL_RADIUS).floor() as isize).max(0) as usize;
+        let y_max = (self.y + ENERGY_BALL_RADIUS).ceil() as usize;
+        let width = x_max + 1;
+        let height = y_max + 1;
+        let mut buffer = vec![0u32; width * height];
+        self.draw(&mut buffer, width, height);
+
+        let mut pixels = Vec::new();
+        for y in y_min..=y_max {
+            for x in x_min..=x_max {
+                if buffer[y * width + x] != 0 {
+                    pixels.push((x, y, buffer[y * width + x]));
+                }
+            }
+        }
         pixels
     }
 }

@@ -63,8 +63,7 @@ fn main() {
         simulation.tick(stats_display.fps());
         stats_display.tick(Instant::now());
 
-        let world_buffer = WorldBuffer::new(simulation.cells(), simulation.energy_balls(), width, height);
-        frame_pixels.copy_from_slice(world_buffer.pixels());
+        WorldBuffer::draw_into(simulation.cells(), simulation.energy_balls(), &mut frame_pixels, width, height);
         for (x, y, color) in stats_display.pixels(simulation.cells().len(), simulation.total_energy()) {
             if x < width && y < height {
                 frame_pixels[y * width + x] = color;
